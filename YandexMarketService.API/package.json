@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "latest": "^0.2.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.1"
+  }
+}
