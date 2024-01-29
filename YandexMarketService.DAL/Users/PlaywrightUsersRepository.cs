@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Playwright;
+using YandexMarketService.BLL.Models;
 using YandexMarketService.BLL.Repositories;
 
 namespace YandexMarketService.DAL.Users
@@ -16,14 +17,11 @@ namespace YandexMarketService.DAL.Users
             _memoryCache = memoryCache;
         }
 
-        public async Task LogInAsync(int userId)
+        public async Task LogInAsync(UserModel user)
         {
-            string? email = _configuration["YANDEX_MARKET_USER_EMAIL"];
-            string? password = _configuration["YANDEX_MARKET_USER_PASSWORD"];
-
             //Create instance plwr
             using var playwright = await Playwright.CreateAsync();
-            await Console.Out.WriteLineAsync($"\nplaywright was created. {DateTime.Now}\n");
+            await Console.Out.WriteLineAsync($"playwright was created. {DateTime.Now}");
             var browser = await playwright.Firefox.LaunchAsync(
             new BrowserTypeLaunchOptions()
             {
@@ -33,13 +31,13 @@ namespace YandexMarketService.DAL.Users
                 //    Password = "M2nmRt",
                 //    Server = "185.200.170.3:9122"
                 //},
-                Headless = false,//if false will include visable browser
+                Headless = true,//if false will include visable browser
                 SlowMo = new Random().Next(1000, 1500),
                 //ExecutablePath = "/root/.npm/_npx/e41f203b7505f1fb/node_modules/playwright-core/lib/server/firefox"
 
 
             });
-            await Console.Out.WriteLineAsync($"\nthe browser was opened. {DateTime.Now}\n");
+            await Console.Out.WriteLineAsync($"the browser was opened. {DateTime.Now}");
 
             //create context
             var context = await browser.NewContextAsync(new BrowserNewContextOptions()
@@ -50,7 +48,7 @@ namespace YandexMarketService.DAL.Users
                 RecordHarPath = Path.Combine("HarData", "HAR_FILE"),//write in a file
             });
 
-            await Console.Out.WriteLineAsync($"\nthe context was created. {DateTime.Now}\n");
+            await Console.Out.WriteLineAsync($"the context was created. {DateTime.Now}");
 
             //timeout of the wait
             //context.SetDefaultTimeout(60000);
@@ -61,6 +59,14 @@ namespace YandexMarketService.DAL.Users
             IPage page;
 
             #region Read Coockie 
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
+                page = await _memoryCache.GetOrCreateAsync(user.Id, async x =>
+                    {
+                        x.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);   // TODO: set real expiration time
+                        return await context.NewPageAsync();
+                    });
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
+
             //List<Cookie> cookiesForAdd = new List<Cookie>();
             if (File.Exists("context.json"))
             {
@@ -68,14 +74,6 @@ namespace YandexMarketService.DAL.Users
                 {
                     StorageStatePath = "context.json"
                 });
-
-#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-                page = await _memoryCache.GetOrCreateAsync(userId, async x =>
-                    {
-                        x.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30);   // TODO: set real expiration time
-                        return await context.NewPageAsync();
-                    });
-#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
 
                 await page.GotoAsync(@"https://partner.market.yandex.ru/business", new PageGotoOptions { Timeout = 60000 });
                 //await page.WaitForDownloadAsync(new PageWaitForDownloadOptions { Timeout = 60000 }) ;// WaitForTimeoutAsync(60000);
@@ -88,14 +86,14 @@ namespace YandexMarketService.DAL.Users
                 await page.WaitForLoadStateAsync(LoadState.Load);
 
                 //input email
-                await Console.Out.WriteLineAsync($"\nstart login. {DateTime.Now}\n");
+                await Console.Out.WriteLineAsync($"start login. {DateTime.Now}");
 
                 while (true)
                     try
                     {
-                        Console.WriteLine($"enter username. {DateTime.Now}");
+                        Console.WriteLine($"enter username: {user.UserName} {DateTime.Now}");
                         await page.Locator("//input[@autocomplete = \"username\"]").WaitForAsync();
-                        await page.Locator("//input[@autocomplete = \"username\"]").FillAsync(email);
+                        await page.Locator("//input[@autocomplete = \"username\"]").FillAsync(user.UserName);
                         break;
                     }
                     catch(TimeoutException)
@@ -105,7 +103,7 @@ namespace YandexMarketService.DAL.Users
                         await locator.ClickAsync();
 
                         await page.Locator("//input[@autocomplete = \"username\"]").WaitForAsync();
-                        await page.Locator("//input[@autocomplete = \"username\"]").FillAsync(email);
+                        await page.Locator("//input[@autocomplete = \"username\"]").FillAsync(user.UserName);
                         break;
                     }
                     catch (Exception ex)
@@ -117,7 +115,7 @@ namespace YandexMarketService.DAL.Users
                 while (true)
                     try
                     {
-                        await Console.Out.WriteLineAsync($"\nsubmit. {DateTime.Now}\n");
+                        await Console.Out.WriteLineAsync($"submit. {DateTime.Now}");
                         await page.Locator("//button[@type = \"submit\" or contains(text(),'Войти')][1]").WaitForAsync();
                         await page.Locator("//button[@type = \"submit\" or contains(text(),'Войти')][1]").ClickAsync();
                         break;
@@ -128,45 +126,46 @@ namespace YandexMarketService.DAL.Users
                 while (true)
                     try
                     {
-                        await Console.Out.WriteLineAsync($"\nenter password. {DateTime.Now}\n");
+                        await Console.Out.WriteLineAsync($"enter password: {user.Password} {DateTime.Now}");
                         await page.Locator("//input[contains(@placeholder,'Введите пароль')]").WaitForAsync();
-                        await page.Locator("//input[contains(@placeholder,'Введите пароль')]").FillAsync(password);
+                        await page.Locator("//input[contains(@placeholder,'Введите пароль')]").FillAsync(user.Password);
                         break;
                     }
                     catch { }
 
                 //click submit the pass
-                while (true)
-                    try
-                    {
-                        await Console.Out.WriteLineAsync($"\nsubmit. {DateTime.Now}\n");
-                        await page.Locator("//button[@type = \"submit\" or contains(text(),'Войти')][1]").WaitForAsync();
-                        await page.Locator("//button[@type = \"submit\" or contains(text(),'Войти')][1]").ClickAsync();
-                        break;
-                    }
-                    catch { }
+                await Console.Out.WriteLineAsync("Stop for testing");
+                //while (true)
+                //    try
+                //    {
+                //        await Console.Out.WriteLineAsync($"\nsubmit. {DateTime.Now}\n");
+                //        await page.Locator("//button[@type = \"submit\" or contains(text(),'Войти')][1]").WaitForAsync();
+                //        await page.Locator("//button[@type = \"submit\" or contains(text(),'Войти')][1]").ClickAsync();
+                //        break;
+                //    }
+                //    catch { }
 
-                //wait load page
-                await page.WaitForLoadStateAsync(LoadState.Load);
-                await page.WaitForTimeoutAsync(7000);
+                ////wait load page
+                //await page.WaitForLoadStateAsync(LoadState.Load);
+                //await page.WaitForTimeoutAsync(7000);
 
-                //finde locator input with text = 'Восстановить доступ'
-                var _input_text_restore = page.QuerySelectorAsync("//button/span[contains(text(),'Далее')]").Result;
-                if (_input_text_restore is not null)
-                {
+                ////finde locator input with text = 'Восстановить доступ'
+                //var _input_text_restore = page.QuerySelectorAsync("//button/span[contains(text(),'Далее')]").Result;
+                //if (_input_text_restore is not null)
+                //{
 
-                    var passFromPhone = await page.QuerySelectorAsync("//input");
-                    if (passFromPhone is not null)
-                    {
-                        Console.Write("Введите пароль:");
-                        var userInputPass = Console.ReadLine();
-                        await passFromPhone.FillAsync(userInputPass);
-                    }
-                    else throw new Exception("Availible is closed: you need restore password");
-                }
-                await page.WaitForTimeoutAsync(10000);
-                await Console.Out.WriteLineAsync($"\nsave context.json. {DateTime.Now}\n");
-                await File.WriteAllTextAsync("context.json", context.StorageStateAsync().Result);
+                //    var passFromPhone = await page.QuerySelectorAsync("//input");
+                //    if (passFromPhone is not null)
+                //    {
+                //        Console.Write("Введите пароль:");
+                //        var userInputPass = Console.ReadLine();
+                //        await passFromPhone.FillAsync(userInputPass);
+                //    }
+                //    else throw new Exception("Availible is closed: you need restore password");
+                //}
+                //await page.WaitForTimeoutAsync(10000);
+                //await Console.Out.WriteLineAsync($"\nsave context.json. {DateTime.Now}\n");
+                //await File.WriteAllTextAsync("context.json", context.StorageStateAsync().Result);
             }
 
             #endregion

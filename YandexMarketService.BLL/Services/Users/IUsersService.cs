@@ -1,7 +1,9 @@
-﻿namespace YandexMarketService.BLL.Services.Users
+﻿using YandexMarketService.BLL.Models;
+
+namespace YandexMarketService.BLL.Services.Users
 {
     public interface IUsersService
     {
-        Task LogInAsync();
+        Task LogInAsync(UserModel user);
     }
 }

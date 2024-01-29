@@ -2,6 +2,6 @@
 {
     public interface IReviewsRepository
     {
-        Task HandleReviewsAsync(int userId);
+        Task HandleReviewsAsync(string userId);
     }
 }

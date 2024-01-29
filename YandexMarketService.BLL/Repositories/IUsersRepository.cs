@@ -1,7 +1,9 @@
-﻿namespace YandexMarketService.BLL.Repositories
+﻿using YandexMarketService.BLL.Models;
+
+namespace YandexMarketService.BLL.Repositories
 {
     public interface IUsersRepository
     {
-        Task LogInAsync(int userId);
+        Task LogInAsync(UserModel user);
     }
 }

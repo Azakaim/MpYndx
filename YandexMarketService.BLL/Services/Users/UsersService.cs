@@ -1,4 +1,5 @@
-﻿using YandexMarketService.BLL.Repositories;
+﻿using YandexMarketService.BLL.Models;
+using YandexMarketService.BLL.Repositories;
 
 namespace YandexMarketService.BLL.Services.Users
 {
@@ -8,11 +9,12 @@ namespace YandexMarketService.BLL.Services.Users
 
         public UsersService(IUsersRepository usersRepository) => _usersRepository = usersRepository;
 
-        public async Task LogInAsync()
+        public async Task LogInAsync(UserModel user)
         {
             //try
             //{
-                await _usersRepository.LogInAsync(1);
+            user.Id = 1;
+            await _usersRepository.LogInAsync(user);
             //}
             //catch (Exception ex)
             //{

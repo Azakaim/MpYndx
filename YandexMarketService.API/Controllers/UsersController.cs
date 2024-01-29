@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using YandexMarketService.BLL.Models;
 using YandexMarketService.BLL.Services.Users;
 
 namespace YandexMarketService.API.Controllers
@@ -11,10 +12,10 @@ namespace YandexMarketService.API.Controllers
 
         public UsersController(IUsersService usersService) => _usersService = usersService;
 
-        [HttpGet("users/login")]
-        public async Task<IActionResult> LogInAsync()
+        [HttpPost("users/login")]
+        public async Task<IActionResult> LogInAsync(UserModel user)
         {
-            await _usersService.LogInAsync();
+            await _usersService.LogInAsync(user);
 
             return Ok();
         }

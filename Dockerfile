@@ -31,6 +31,8 @@ run npx playwright install-deps firefox
 # remove this line
 run mv /root/.cache/ms-playwright/firefox-1429 /root/.cache/ms-playwright/firefox-1425
 
+#RUN groupadd -r user && useradd -r -g user user
+#USER user
 
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "YandexMarketService.API.dll"]

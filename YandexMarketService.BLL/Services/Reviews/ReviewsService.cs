@@ -10,7 +10,7 @@ namespace YandexMarketService.BLL.Services.Reviews
 
         public async Task HandleReviewsAsync()
         {
-            await _reviewsRepository.HandleReviewsAsync(1);
+            await _reviewsRepository.HandleReviewsAsync("anonogo");
         }
     }
 }
